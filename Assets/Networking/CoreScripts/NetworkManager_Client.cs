@@ -7,21 +7,19 @@ using System.Text;
 using System.Linq;
 
 
-public class NetworkManager_Client : MonoBehaviour
+public class NetworkManager_Client : NetworkManagerBase
 {
-    public IPAddress OwnIP;
-    public string DOwnIP;
-    public string TargetIP;
+    public string DOwnIP, TargetIP;
     public string m_TargetIP
     {
         get { return TargetIP; }
         set { TargetIP = value; }
     }
+
     UdpClient OwnUdpClient;
     TcpClient OwnTcpSocket;
     [SerializeField]
     bool LaunchOnStart;
-    byte NetworkId;
     [SerializeField]
     int TcpPortNum = 7890, UdpPortNum = 7891;
     /// <summary>
@@ -33,8 +31,20 @@ public class NetworkManager_Client : MonoBehaviour
     /// </summary>
     Dictionary<int, ReplicatiorBase> RepObjPairs;
     int buffersize = 512;
-    Encoding encoding = Encoding.ASCII;
     byte[] databuffer;
+    [SerializeField]
+    float ClientUpdateInterval = 0.033f;
+
+    public delegate void ConnectionNotification(NetworkManager_Client client);
+    public delegate void NetworkDataHandler(byte[] data);
+
+    public ConnectionNotification OnConnectedToServer;
+    public ConnectionNotification OnAssignedNetwork;
+    public ReplicatedObjectNotification OnNewRepObjectAdded;
+    public ReplicatedObjectNotification OnNewAutonomousObjectAdmitted;
+    public NetworkDataHandler OnTcpPacketReceived;
+    public NetworkDataHandler OnTcpMessageReceived;
+    public NetworkDataHandler OnUdpPacketReceived;
 
     // Start is called before the first frame update
     void Start()
@@ -43,6 +53,16 @@ public class NetworkManager_Client : MonoBehaviour
         {
             LaunchNetworkClient();
         }
+    }
+
+    public override void Launch()
+    {
+        LaunchNetworkClient();
+    }
+
+    public override void ShutDown()
+    {
+        ShutDownClient();
     }
 
     public void LaunchNetworkClient()
@@ -59,7 +79,26 @@ public class NetworkManager_Client : MonoBehaviour
         catch
         {
             Debug.Log("Couldnt find Server");
+            return;
         }
+        LocalInst = this;
+    }
+
+    public void ShutDownClient()
+    {
+        databuffer = null;
+        CancelInvoke();
+        if(OwnTcpSocket.Connected)
+        SendTcpPacket(encoding.GetBytes("Disconnect$"));
+        OwnTcpSocket.Close();
+        OwnTcpSocket = null;
+        OwnUdpClient.Close();
+        OwnUdpClient = null;
+        AutonomausObjects.Clear();
+        AutonomausObjects = null;
+        RepObjPairs.Clear();
+        RepObjPairs = null;
+        LocalInst = null;
     }
 
     void ConnectedToServerCallback(System.IAsyncResult ar)
@@ -67,23 +106,45 @@ public class NetworkManager_Client : MonoBehaviour
         OwnTcpSocket.EndConnect(ar);
         if (OwnTcpSocket.Connected)
             Debug.Log("Client: Connected to Server");
-        SendTcpPacket(encoding.GetBytes("RequestInitInfo"));
+        SendTcpPacket(encoding.GetBytes("Init$"));
         OwnUdpClient.Send(encoding.GetBytes("InitRep$"), encoding.GetByteCount("InitRep$"), new IPEndPoint(IPAddress.Parse(TargetIP), UdpPortNum));
+        if (OnConnectedToServer != null)
+            OnConnectedToServer.Invoke(this);
+        InvokeRepeating("ClientTick", ClientUpdateInterval, ClientUpdateInterval);
         //OwnUdpClient.Connect(TargetIP, UdpPortNum);
     }
 
-    void SendTcpPacket(byte[] data)
+    public void SendTcpPacket(byte[] data)
     {
-        OwnTcpSocket.Client.Send(data);
+        try
+        {
+            OwnTcpSocket.Client.Send(data);
+        }
+        catch
+        {
+            Debug.Log("Connection Lost.");
+        }
+    }
+    public void SendTcpPacket(string data)
+    {
+        try
+        {
+            OwnTcpSocket.Client.Send(encoding.GetBytes(data));
+        }
+        catch
+        {
+            Debug.Log("Connection Lost.");
+        }
     }
 
     void NetworkInitialize(byte NewId)
     {
         NetworkId = NewId;
+        if (OnAssignedNetwork != null)
+            OnAssignedNetwork.Invoke(this);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ClientTick()
     {
         if (OwnTcpSocket == null || !OwnTcpSocket.Connected)
             return;
@@ -92,16 +153,21 @@ public class NetworkManager_Client : MonoBehaviour
             OwnTcpSocket.Client.Receive(databuffer);
             Debug.Log("Tcp Received :" + encoding.GetString(databuffer));
             DecompServerMessage(databuffer);
+            if (OnTcpPacketReceived != null)
+                OnTcpPacketReceived.Invoke(databuffer);
         }
         if (OwnUdpClient.Available > 0)
         {
             IPEndPoint endPoint = null;
-            databuffer = OwnUdpClient.Receive(ref endPoint);
-            Debug.Log("Udp Received : " + encoding.GetString(databuffer));
-            DecompReplicationData(databuffer);
+            byte[] Udpdatabuffer = OwnUdpClient.Receive(ref endPoint);
+            Debug.Log("Udp Received : " + encoding.GetString(Udpdatabuffer));
+            DecompReplicationData(Udpdatabuffer);
+            if (OnUdpPacketReceived != null)
+                OnUdpPacketReceived.Invoke(Udpdatabuffer);
         }
         ReplicateAutonomousObject();
     }
+
     /// <summary>
     /// Send creating autonomous object request to server <!waring!> Autonomous Object must have One and Only Name!
     /// </summary>
@@ -113,46 +179,97 @@ public class NetworkManager_Client : MonoBehaviour
     /// <param name="ParentName">replicated prefab initial parent name</param>
     public void RequestCreatingNewAutonomousObject(ReplicatiorBase replicatior, string ReplicatedPrefabName, Vector3 pos, Vector3 eular, string ParentName)
     {
-        SendTcpPacket(encoding.GetBytes("NewAutoObj," + ReplicatedPrefabName + "," + replicatior.gameObject.name + "," + Serializer.Vector3ToString(pos) + "," + Serializer.Vector3ToString(eular) + "," + ParentName));
+        SendTcpPacket(encoding.GetBytes("NewAutoObj," + ReplicatedPrefabName + "," + replicatior.gameObject.name + "," + Serializer.Vector3ToString(pos) +
+            "," + Serializer.Vector3ToString(eular) + "," + ParentName));
     }
 
-    public void RequestRPCOnServer(string ServerObjectName, string MethodName, string arg)
+    public void DestroyAutonomousObject(ReplicatiorBase replicatior)
     {
-        SendTcpPacket(encoding.GetBytes("RPCOS," + ServerObjectName + "," + MethodName + "," + arg));
+        SendTcpPacket(encoding.GetBytes("DestAutoObj," + replicatior.Id));
+        RepObjPairs.Remove(replicatior.Id);
+        AutonomausObjects.Remove(replicatior);
+        Destroy(replicatior.gameObject);
     }
 
-    public void RequestRPCOnOtherClient(string ObjectName, string MethodName, string arg, byte ClientId)
+    public void RequestRPCOnServer(ReplicatiorBase RPCTarget, string MethodName, string arg)
+    {
+        SendTcpPacket(encoding.GetBytes("RPCOS," + RPCTarget.Id + "," + MethodName + "," + arg));
+    }
+
+    public void RequestRPCOnOtherClient(ReplicatiorBase RPCTarget, string MethodName, string arg, byte ClientId)
     {
         if (ClientId == NetworkId)
-            ProcessRPC(ObjectName, MethodName, arg);
+            ProcessRPC(RPCTarget.Id, MethodName, arg);
         else
         {
-            SendTcpPacket(encoding.GetBytes("RPCOC," + ClientId + "," + ObjectName + "," + MethodName + "," + arg));
+            SendTcpPacket(encoding.GetBytes("RPCOC," + ClientId + "," + RPCTarget.Id + "," + MethodName + "," + arg));
         }
+    }
+
+    public void RequestRPCMultiCast(ReplicatiorBase RPCTarget, string MethodName, string arg)
+    {
+        SendTcpPacket(encoding.GetBytes("RPCMC," + RPCTarget.Id + "," + MethodName + "," + arg));
+    }
+
+    public void RequestRPCOnServer_Wide(string ServerObjectName, string MethodName, string arg)
+    {
+        SendTcpPacket(encoding.GetBytes("RPWCOS," + ServerObjectName + "," + MethodName + "," + arg));
+    }
+
+    public void RequestRPCOnOtherClient_Wide(string ObjectName, string MethodName, string arg, byte ClientId)
+    {
+        if (ClientId == NetworkId)
+            ProcessRPC_Wide(ObjectName, MethodName, arg);
+        else
+        {
+            SendTcpPacket(encoding.GetBytes("RPWCOC," + ClientId + "," + ObjectName + "," + MethodName + "," + arg));
+        }
+    }
+
+    public void RequestRPCMultiCast_Wide(string ObjectName, string MethodName, string arg)
+    {
+        SendTcpPacket(encoding.GetBytes("RPWCMC," + ObjectName + "," + MethodName + "," + arg));
     }
 
     void AddNewReplicatedObject(ReplicatiorBase replicatior, int Id, byte OwnerId)
     {
         replicatior.Id = Id;
         replicatior.OwnerNetId = OwnerId;
+        replicatior.LocalHostNetId = NetworkId;
         RepObjPairs.Add(Id, replicatior);
+        if (OnNewRepObjectAdded != null)
+            OnNewRepObjectAdded.Invoke(replicatior);
     }
 
     void AddAdmittedAutonomousObject(string ObjName, int ObjId)
     {
         GameObject obj = GameObject.Find(ObjName);
+
         if (obj == null)
             return;
+
         ReplicatiorBase replicatior = obj.GetComponent<ReplicatiorBase>();
-        replicatior.Id = ObjId;
-        replicatior.OwnerNetId = NetworkId;
+        AddNewReplicatedObject(replicatior, ObjId, NetworkId);
         AutonomausObjects.Add(replicatior);
+        if (OnNewAutonomousObjectAdmitted != null)
+            OnNewAutonomousObjectAdmitted.Invoke(replicatior);
+
         Debug.Log("New Autonomous Object : " + ObjName);
+    }
+
+    void DestroyReplicatedObject(int Id)
+    {
+        if (RepObjPairs.TryGetValue(Id, out ReplicatiorBase replicatior))
+        {
+            RepObjPairs.Remove(Id);
+            Destroy(replicatior.gameObject);
+        }
     }
 
     void DecompServerMessage(byte[] data)
     {
-        string[] vs = encoding.GetString(data).Split('$');
+        string datastr = encoding.GetString(data);
+        string[] vs = datastr.Contains('$') ? datastr.Split('$') : new string[] { datastr };
         foreach (string s in vs)
         {
             ProcessServerMessage(s);
@@ -161,9 +278,7 @@ public class NetworkManager_Client : MonoBehaviour
 
     void ProcessServerMessage(string mes)
     {
-        string[] vs = mes.Split(',');
-        if (vs.Length < 1)
-            return;
+        string[] vs = mes.Contains(',') ? mes.Split(',') : new string[] { mes };
         switch (vs[0])
         {
             case "NewRepObj":
@@ -172,17 +287,36 @@ public class NetworkManager_Client : MonoBehaviour
             case "AutoObjAdded":
                 AddAdmittedAutonomousObject(vs[1], int.Parse(vs[2]));
                 break;
+            case "Dest":
+                DestroyReplicatedObject(int.Parse(vs[1]));
+                break;
+            case "End":
+                Debug.Log("Server Shutdown");
+                ShutDownClient();
+                break;
+            case "Kicked":
+                Debug.Log("Kicked From Server");
+                ShutDownClient();
+                break;
             case "RPCOC":
-                ProcessRPC(vs[1], vs[2], vs[3]);
+                ProcessRPC(int.Parse(vs[1]), vs[2], vs[3]);
+                break;
+            case "RPWCOC":
+                ProcessRPC_Wide(vs[1], vs[2], vs[3]);
                 break;
             case "Assign":
                 NetworkInitialize(byte.Parse(vs[1]));
+                break;
+            default:
+                OnTcpMessageReceived?.Invoke(encoding.GetBytes(mes));
                 break;
         }
     }
 
     GameObject CreateReplicatedPrefab(string PrefabName, Vector3 pos, Vector3 eular, string ParentObj, int ObjId, byte OwnerId)
     {
+        if (RepObjPairs.TryGetValue(ObjId, out ReplicatiorBase r))
+            return null;
         string path = "Prefabs/" + PrefabName;
         GameObject Pobj = (GameObject)Resources.Load(path), parentobj = GameObject.Find(ParentObj), obj;
         if (parentobj != null)
@@ -194,12 +328,25 @@ public class NetworkManager_Client : MonoBehaviour
         return obj;
     }
 
-    void ProcessRPC(string ObjectName, string MethodName, string arg)
+    void ProcessRPC(int ObjectId, string MethodName, string arg)
+    {
+        if (RepObjPairs.TryGetValue(ObjectId, out ReplicatiorBase replicatior))
+        {
+            replicatior.SendMessage(MethodName, arg, SendMessageOptions.DontRequireReceiver);
+        }
+        else
+        {
+            Debug.Log("Object Id is invalid. RPC failed.");
+            return;
+        }
+    }
+
+    void ProcessRPC_Wide(string ObjectName, string MethodName, string arg)
     {
         GameObject obj = GameObject.Find(ObjectName);
         if (obj == null)
         {
-            Debug.Log("Object couldnt find. RPC failed.");
+            Debug.Log("Object couldnt find. WideRange RPC failed.");
             return;
         }
         obj.SendMessage(MethodName, arg, SendMessageOptions.DontRequireReceiver);
@@ -211,6 +358,8 @@ public class NetworkManager_Client : MonoBehaviour
         foreach (string s in vs)
         {
             if (s.Length < 1)
+                return;
+            if (s.IndexOf(':') < 0)
                 return;
             int Id = int.Parse(s.Substring(0, s.IndexOf(':')));
             HandOutReplicationData(Id, encoding.GetBytes(s.Substring(s.IndexOf(':') + 1)));

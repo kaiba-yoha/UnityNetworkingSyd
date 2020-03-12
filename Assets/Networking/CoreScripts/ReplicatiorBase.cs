@@ -11,22 +11,25 @@ public class ReplicatiorBase : MonoBehaviour
     /// <summary>
     /// Dont Change this variable
     /// </summary>
+    public byte LocalHostNetId = 0;
+    /// <summary>
+    /// Dont Change this variable
+    /// </summary>
     public int Id = -1;
     /// <summary>
     /// Dont Change this variable
     /// </summary>
     public string RepPrefabName;
-    // Start is called before the first frame update
-    void Start()
-    {
 
+    public bool IsAutonomousObject()
+    {
+        return OwnerNetId != 0;
+    }
+    bool IsServer()
+    {
+        return LocalHostNetId == 0;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
     /// <summary>
     /// For Server.
     /// Return Byte Array for Replication.
@@ -76,6 +79,7 @@ public class ReplicatiorBase : MonoBehaviour
     {
         return !client.AutonomousObjects.Contains(this);
     }
+
     /// <summary>
     /// Available Only On Client. Only for AutonomousObject
     /// </summary>
@@ -93,7 +97,7 @@ public static class Serializer
 {
     public static byte[] Vector3ToBytes(Vector3 vec)
     {
-        return NetworkManager_Server.encoding.GetBytes(Vector3ToString(vec));
+        return NetworkManagerBase.encoding.GetBytes(Vector3ToString(vec));
     }
 
     public static string Vector3ToString(Vector3 vec, int f = 1)
