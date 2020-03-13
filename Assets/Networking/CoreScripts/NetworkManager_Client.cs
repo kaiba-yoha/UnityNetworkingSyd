@@ -20,8 +20,7 @@ public class NetworkManager_Client : NetworkManagerBase
     TcpClient OwnTcpSocket;
     [SerializeField]
     bool LaunchOnStart;
-    [SerializeField]
-    int TcpPortNum = 7890, UdpPortNum = 7891;
+    public int TcpPortNum = 7890, UdpPortNum = 7891;
     /// <summary>
     /// Object List of Autonomous Object.
     /// </summary>

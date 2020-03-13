@@ -25,7 +25,7 @@ public class CameraStreaming_Server : MonoBehaviour
     {
         if (++CaptureCount % Interval != 0)
             return;
-        texture = new Texture2D(Screen.width, Screen.height);
+        texture = new Texture2D(Mathf.Clamp(streamwidth,1,Screen.width), Mathf.Clamp(streamheight,1,Screen.height));
         texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
         texture.Apply();
         if (netserver.ClientDataList.Count > 0)
@@ -48,7 +48,7 @@ public class CameraStreaming_Server : MonoBehaviour
         for(int i = 0; i < udpClients.Count; i++)
         {
         IPEndPoint endPoint = new IPEndPoint(netserver.ClientDataList[0].address,netserver.UdpPortNum+i+1);
-            start = (i * data.Length);
+            start = (i * data.Length/portnumber);
             texture.GetRawTextureData().CopyTo(data, start);
             udpClients[i].Send(data, data.Length, endPoint);
         }
