@@ -14,7 +14,7 @@ public class CameraStreaming_Server : MonoBehaviour
     public int Interval = 3;
     [SerializeField] int CaptureCount;
     List<UdpClient> udpClients = new List<UdpClient>();
-    public int streamwidth = 480, streamheight = 640;
+    public int streamwidth = 640, streamheight = 360;
 
     // Start is called before the first frame update
     void Start()
@@ -30,7 +30,7 @@ public class CameraStreaming_Server : MonoBehaviour
             return;
         texture = new Texture2D(streamwidth, streamheight, TextureFormat.RGB24, true);
         texture.ReadPixels(new Rect(0, 0, streamwidth, streamheight), 0, 0);
-        texture.Apply();
+        //texture.Apply();
         CaptureCount = 0;
         if (netserver.ClientDataList.Count > 0)
             SendScreen();
@@ -49,7 +49,7 @@ public class CameraStreaming_Server : MonoBehaviour
     {
         bool IsLengthMultiple = texture.GetRawTextureData().LongLength % portnumber == 0;
         long amount = texture.GetRawTextureData().LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
-        long start = -amount;
+        long start = -amount, RestDataSize = texture.GetRawTextureData().LongLength;
         byte[] data = new byte[amount];
 
         Debug.Log("RawDataLength : " + texture.GetRawTextureData().Length + " DatasizePerSocket:" + data.Length);
@@ -57,9 +57,10 @@ public class CameraStreaming_Server : MonoBehaviour
         for (int i = 0; i < udpClients.Count; i++)
         {
             IPEndPoint endPoint = new IPEndPoint(netserver.ClientDataList[0].address, netserver.UdpPortNum + i + 1);
-            start += amount - (!IsLengthMultiple && i == udpClients.Count - 1 ? 1 : 0);
-            Array.Copy(texture.GetRawTextureData(), start, data, 0, amount);
+            start += amount;
+            Array.Copy(texture.GetRawTextureData(), start, data, 0, amount <= RestDataSize ? amount : RestDataSize);
             udpClients[i].Send(data, data.Length, endPoint);
+            RestDataSize -= amount;
         }
     }
 }
