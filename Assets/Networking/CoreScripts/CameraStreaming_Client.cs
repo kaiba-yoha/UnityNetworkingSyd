@@ -11,6 +11,7 @@ public class CameraStreaming_Client : MonoBehaviour
     [SerializeField] NetworkManager_Client netclient;
     [SerializeField] Texture2D texture;
     [SerializeField] GameObject streamobj;
+    [SerializeField] UnityEngine.UI.RawImage imageui;
     byte[] NativeTextureData;
     public int portnumber = 8;
     List<UdpClient> udpClients = new List<UdpClient>();
@@ -19,9 +20,11 @@ public class CameraStreaming_Client : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        texture = new Texture2D(streamwidth, streamheight,TextureFormat.RGB24,true);
+        texture = new Texture2D(streamwidth, streamheight, TextureFormat.RGB24, true);
         NativeTextureData = new byte[texture.GetRawTextureData().Length];
+        if(streamobj!=null)
         streamobj.GetComponent<MeshRenderer>().material.mainTexture = texture;
+        imageui.texture = texture;
         OpenUDPSockets();
     }
 
@@ -41,19 +44,21 @@ public class CameraStreaming_Client : MonoBehaviour
 
     void ReceiveTexture()
     {
-        int size=texture.GetRawTextureData().Length / portnumber;
+        bool IsLengthMultiple = texture.GetRawTextureData().LongLength % portnumber == 0;
+        long amount = texture.GetRawTextureData().LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
+        long start = -amount,RestDataSize=texture.GetRawTextureData().LongLength;
         byte[] data;
-        int start = 0;
-        IPEndPoint endPoint=null;
+        IPEndPoint endPoint = null;
         for (int i = 0; i < udpClients.Count; i++)
         {
+            start += amount;
             if (udpClients[i].Available > 0)
             {
-                start = (i * size);
-                data =udpClients[i].Receive(ref endPoint);
-                Array.Copy(data, 0, NativeTextureData, start, data.Length);
+                data = udpClients[i].Receive(ref endPoint);
+                Array.Copy(data, 0, NativeTextureData, start, Mathf.Clamp(data.Length,0,(int)RestDataSize));
                 Debug.Log("recv : start " + start);
             }
+            RestDataSize -= amount;
         }
         texture.LoadRawTextureData(NativeTextureData);
         texture.Apply();
