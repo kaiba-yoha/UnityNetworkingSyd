@@ -10,18 +10,18 @@ public class CameraStreaming_Client : MonoBehaviour
 {
     [SerializeField] NetworkManager_Client netclient;
     [SerializeField] Texture2D texture;
+    [SerializeField] GameObject streamobj;
     byte[] NativeTextureData;
     public int portnumber = 8;
-    public int Interval = 3;
-    [SerializeField] int CaptureCount;
     List<UdpClient> udpClients = new List<UdpClient>();
     public int streamwidth = 480, streamheight = 640;
 
     // Start is called before the first frame update
     void Start()
     {
-        texture = new Texture2D(streamwidth, streamheight);
+        texture = new Texture2D(streamwidth, streamheight,TextureFormat.RGB24,true);
         NativeTextureData = new byte[texture.GetRawTextureData().Length];
+        streamobj.GetComponent<MeshRenderer>().material.mainTexture = texture;
         OpenUDPSockets();
     }
 
@@ -52,6 +52,7 @@ public class CameraStreaming_Client : MonoBehaviour
                 start = (i * size);
                 data =udpClients[i].Receive(ref endPoint);
                 Array.Copy(data, 0, NativeTextureData, start, data.Length);
+                Debug.Log("recv : start " + start);
             }
         }
         texture.LoadRawTextureData(NativeTextureData);

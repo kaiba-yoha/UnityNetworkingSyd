@@ -245,6 +245,7 @@ GameObject:
   - component: {fileID: 1566480420}
   - component: {fileID: 1566480419}
   - component: {fileID: 1566480422}
+  - component: {fileID: 1566480423}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -331,11 +332,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkId: 0
   DOwnIP: 
-  TargetIP: 192.168.100.101
+  TargetIP: 192.168.2.119
   LaunchOnStart: 1
   TcpPortNum: 7990
   UdpPortNum: 7995
   ClientUpdateInterval: 0.033
+--- !u!114 &1566480423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1566480418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f135643588dd4ca0939c90c7629ca0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  netclient: {fileID: 1566480422}
+  texture: {fileID: 0}
+  streamobj: {fileID: 2129761996}
+  portnumber: 4
+  streamwidth: 480
+  streamheight: 640
 --- !u!1 &1936356281
 GameObject:
   m_ObjectHideFlags: 0
