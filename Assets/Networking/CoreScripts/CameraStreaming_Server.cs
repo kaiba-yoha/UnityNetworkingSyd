@@ -15,12 +15,21 @@ public class CameraStreaming_Server : MonoBehaviour
     [SerializeField] int CaptureCount;
     List<UdpClient> udpClients = new List<UdpClient>();
     public int streamwidth = 640, streamheight = 360;
+    Rect PixelRect;
+    byte[] databuffer;
+    bool IsLengthMultiple;
+    long start, amount, RestDataSize;
 
     // Start is called before the first frame update
     void Start()
     {
         streamheight = Mathf.Clamp(streamheight, 1, Screen.height);
         streamwidth = Mathf.Clamp(streamwidth, 1, Screen.width);
+        PixelRect = new Rect(0, 0, streamwidth, streamheight);
+        texture = new Texture2D(streamwidth, streamheight, TextureFormat.RGB24, true);
+        IsLengthMultiple = texture.GetRawTextureData().LongLength % portnumber == 0;
+        amount = texture.GetRawTextureData().LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
+        databuffer = new byte[amount];
         OpenUDPSockets();
     }
 
@@ -28,8 +37,7 @@ public class CameraStreaming_Server : MonoBehaviour
     {
         if (++CaptureCount % Interval != 0)
             return;
-        texture = new Texture2D(streamwidth, streamheight, TextureFormat.RGB24, true);
-        texture.ReadPixels(new Rect(0, 0, streamwidth, streamheight), 0, 0);
+        texture.ReadPixels(PixelRect, 0, 0);
         //texture.Apply();
         CaptureCount = 0;
         if (netserver.ClientDataList.Count > 0)
@@ -47,19 +55,16 @@ public class CameraStreaming_Server : MonoBehaviour
 
     void SendScreen()
     {
-        bool IsLengthMultiple = texture.GetRawTextureData().LongLength % portnumber == 0;
-        long amount = texture.GetRawTextureData().LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
-        long start = -amount, RestDataSize = texture.GetRawTextureData().LongLength;
-        byte[] data = new byte[amount];
-
-        Debug.Log("RawDataLength : " + texture.GetRawTextureData().Length + " DatasizePerSocket:" + data.Length);
+        start = -amount;
+        RestDataSize = texture.GetRawTextureData().LongLength;
+        Debug.Log("RawDataLength : " + texture.GetRawTextureData().Length + " DatasizePerSocket:" + databuffer.Length);
 
         for (int i = 0; i < udpClients.Count; i++)
         {
             IPEndPoint endPoint = new IPEndPoint(netserver.ClientDataList[0].address, netserver.UdpPortNum + i + 1);
             start += amount;
-            Array.Copy(texture.GetRawTextureData(), start, data, 0, amount <= RestDataSize ? amount : RestDataSize);
-            udpClients[i].Send(data, data.Length, endPoint);
+            Array.Copy(texture.GetRawTextureData(), start, databuffer, 0, amount <= RestDataSize ? amount : RestDataSize);
+            udpClients[i].Send(databuffer, databuffer.Length, endPoint);
             RestDataSize -= amount;
         }
     }
