@@ -52,7 +52,7 @@ public class CameraStreaming_Client : MonoBehaviour
     void ReceiveTexture()
     {
         long start = -amount, RestDataSize = ImageData.LongLength;
-
+        ImageData = Array.Empty<byte>();
         IPEndPoint endPoint = null;
         for (int i = 0; i < udpClients.Count; i++)
         {
@@ -60,7 +60,8 @@ public class CameraStreaming_Client : MonoBehaviour
             if (udpClients[i].Available > 0)
             {
                 databuffer = udpClients[i].Receive(ref endPoint);
-                Array.Copy(databuffer, 0, ImageData, start, Mathf.Clamp(databuffer.Length, 0, (int)RestDataSize));
+                ImageData=ImageData.Concat(databuffer).ToArray();
+                //Array.Copy(databuffer, 0, ImageData, start, Mathf.Clamp(databuffer.Length, 0, (int)RestDataSize));
                 Debug.Log("recv : start " + start);
             }
             RestDataSize -= amount;

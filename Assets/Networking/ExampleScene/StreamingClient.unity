@@ -501,7 +501,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkId: 0
   DOwnIP: 
-  TargetIP: 192.168.1.66
+  TargetIP: 192.168.2.125
   LaunchOnStart: 1
   TcpPortNum: 7990
   UdpPortNum: 7995
@@ -522,9 +522,10 @@ MonoBehaviour:
   texture: {fileID: 0}
   streamobj: {fileID: 2129761996}
   imageui: {fileID: 1167037486}
-  portnumber: 64
-  streamwidth: 1236
-  streamheight: 695
+  portnumber: 8
+  streamwidth: 1604
+  streamheight: 902
+  compressionquality: 100
 --- !u!1 &1936356281
 GameObject:
   m_ObjectHideFlags: 0
