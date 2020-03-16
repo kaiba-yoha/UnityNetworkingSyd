@@ -16,7 +16,7 @@ public class CameraStreaming_Server : MonoBehaviour
     List<UdpClient> udpClients = new List<UdpClient>();
     public int streamwidth = 640, streamheight = 360;
     Rect PixelRect;
-    byte[] imagedata,databuffer;
+    byte[] imagedata, databuffer;
     bool IsLengthMultiple;
     long start, amount, RestDataSize;
     [SerializeField] int compressionquality = 0;
@@ -30,11 +30,6 @@ public class CameraStreaming_Server : MonoBehaviour
         texture = new Texture2D(streamwidth, streamheight, TextureFormat.RGB24, true);
         imagedata = texture.EncodeToPNG();
         //imagedata = texture.EncodeToJPG(compressionquality);
-        IsLengthMultiple = imagedata.LongLength % portnumber == 0;
-        amount = imagedata.LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
-        databuffer = new byte[amount];
-        Debug.Log("RawDataLength : " + texture.GetRawTextureData().LongLength);
-        Debug.Log("EncodedDataLength : " + imagedata.Length + " DatasizePerSocket:" + databuffer.Length);
         OpenUDPSockets();
     }
 
@@ -43,10 +38,16 @@ public class CameraStreaming_Server : MonoBehaviour
         if (++CaptureCount % Interval != 0)
             return;
         texture.ReadPixels(PixelRect, 0, 0);
-        
+
         CaptureCount = 0;
         if (netserver.ClientDataList.Count > 0)
-            DivideBytesToSockets(texture.EncodeToJPG(compressionquality));
+        {
+            imagedata = texture.EncodeToPNG();
+            IsLengthMultiple = imagedata.LongLength % portnumber == 0;
+            amount = imagedata.LongLength / portnumber + (IsLengthMultiple ? 0 : 1);
+            databuffer = new byte[amount];
+            DivideBytesToSockets(imagedata);
+        }
     }
 
     void OpenUDPSockets()
@@ -62,6 +63,7 @@ public class CameraStreaming_Server : MonoBehaviour
     {
         start = -amount;
         RestDataSize = data.LongLength;
+        Debug.Log("SendDataLength : " + data.Length + " DatasizePerSocket:" + databuffer.Length);
 
         for (int i = 0; i < udpClients.Count; i++)
         {

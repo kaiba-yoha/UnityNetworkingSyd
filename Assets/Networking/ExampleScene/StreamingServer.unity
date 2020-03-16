@@ -356,8 +356,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   netserver: {fileID: 1566480423}
   texture: {fileID: 0}
-  portnumber: 2
-  Interval: 2
+  portnumber: 64
+  Interval: 8
   CaptureCount: 0
   streamwidth: 1920
   streamheight: 1080
