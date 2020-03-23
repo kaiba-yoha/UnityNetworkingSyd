@@ -242,7 +242,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefabName: NetworkCube
-  server: {fileID: 1566480423}
+  server: {fileID: 0}
 --- !u!4 &1207628271
 Transform:
   m_ObjectHideFlags: 0
@@ -268,7 +268,6 @@ GameObject:
   - component: {fileID: 1566480421}
   - component: {fileID: 1566480420}
   - component: {fileID: 1566480419}
-  - component: {fileID: 1566480423}
   - component: {fileID: 1566480422}
   m_Layer: 0
   m_Name: Main Camera
@@ -351,37 +350,76 @@ MonoBehaviour:
   m_GameObject: {fileID: 1566480418}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80ca38bff18a24b2495e0d43dcc4fd30, type: 3}
+  m_Script: {fileID: 11500000, guid: 875df6bded334874e90a395234615257, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  netserver: {fileID: 1566480423}
-  texture: {fileID: 0}
-  portnumber: 4
-  Interval: 4
-  CaptureCount: 0
-  streamwidth: 1920
-  streamheight: 1080
-  compressionquality: 100
---- !u!114 &1566480423
+  Port: 1700
+--- !u!1 &1644961623
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1644961626}
+  - component: {fileID: 1644961625}
+  - component: {fileID: 1644961624}
+  m_Layer: 0
+  m_Name: EventSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1644961624
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1566480418}
+  m_GameObject: {fileID: 1644961623}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d22ff963faa694ef6950b85d5d269862, type: 3}
+  m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  NetworkId: 0
-  DOwnIP: 192.168.100.112
-  LaunchOnStart: 1
-  TcpPortNum: 7990
-  UdpPortNum: 7995
-  RepObjects: []
-  ServerUpdateInterval: 0.025
-  ServerAcceptInterval: 2
+  m_HorizontalAxis: Horizontal
+  m_VerticalAxis: Vertical
+  m_SubmitButton: Submit
+  m_CancelButton: Cancel
+  m_InputActionsPerSecond: 10
+  m_RepeatDelay: 0.5
+  m_ForceModuleActive: 0
+--- !u!114 &1644961625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644961623}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_FirstSelected: {fileID: 0}
+  m_sendNavigationEvents: 1
+  m_DragThreshold: 10
+--- !u!4 &1644961626
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644961623}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1936356281
 GameObject:
   m_ObjectHideFlags: 0
