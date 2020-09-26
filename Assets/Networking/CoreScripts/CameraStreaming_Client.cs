@@ -51,19 +51,18 @@ public class CameraStreaming_Client : MonoBehaviour
 
     void ReceiveTexture()
     {
+        if (!udpClients.TrueForAll((client) => client.Available > 0))
+            return;
         long start = -amount, RestDataSize = ImageData.LongLength;
         ImageData = Array.Empty<byte>();
         IPEndPoint endPoint = null;
         for (int i = 0; i < udpClients.Count; i++)
         {
             start += amount;
-            if (udpClients[i].Available > 0)
-            {
-                databuffer = udpClients[i].Receive(ref endPoint);
-                ImageData=ImageData.Concat(databuffer).ToArray();
-                //Array.Copy(databuffer, 0, ImageData, start, Mathf.Clamp(databuffer.Length, 0, (int)RestDataSize));
-                Debug.Log("recv : start " + start);
-            }
+            databuffer = udpClients[i].Receive(ref endPoint);
+            ImageData = ImageData.Concat(databuffer).ToArray();
+            //Array.Copy(databuffer, 0, ImageData, start, Mathf.Clamp(databuffer.Length, 0, (int)RestDataSize));
+            Debug.Log("recv : start " + start);
             RestDataSize -= amount;
         }
         //texture.LoadRawTextureData(NativeTextureData);

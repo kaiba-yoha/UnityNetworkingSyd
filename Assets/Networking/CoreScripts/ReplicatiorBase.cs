@@ -113,4 +113,20 @@ public static class Serializer
         return new Vector3(float.Parse(x), float.Parse(y), float.Parse(z));
     }
 
+    public static byte[] PointToBytes(Vector2 vec)
+    {
+        return NetworkManagerForTool_Base.encoding.GetBytes(PointToString(vec));
+    }
+
+    public static string PointToString(Vector2 vec, int f = 1, string delimiter = "|")
+    {
+        string s = vec.x.ToString("f" + f) + delimiter;
+        s += vec.y.ToString("f" + f);
+        return s;
+    }
+
+    public static Vector2 StringToPoint(string x, string y)
+    {
+        return new Vector2(float.Parse(x), float.Parse(y));
+    }
 }

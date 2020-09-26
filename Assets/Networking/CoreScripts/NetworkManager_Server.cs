@@ -6,12 +6,14 @@ using System.Text;
 using System.Linq;
 using UnityEngine;
 
-public struct ClientDataContainer
+public class ClientDataContainer
 {
     public IPAddress address;
     public TcpClient TcpSocket;
     public List<ReplicatiorBase> AutonomousObjects;
+    public string UserName;
     public byte NetworkId;
+    public int UdpEndPoint = 8676;
 }
 
 public class NetworkManager_Server : NetworkManagerBase
