@@ -68,6 +68,16 @@ public class NetworkManagerForTool_Base
 
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="option">For Server. Id List of user who dont send</param>
+    public virtual void SendPacket(byte[] data,byte[] option = null)
+    {
+
+    }
+
     public virtual void ShutDown()
     {
         Updatetimer.Change(-1, -1);

@@ -27,7 +27,7 @@ public class FTSocketContainer
     public bool Sending = false;
     public bool IsReceivingUpdate = false;
     public Queue<string> UploadQueue = new Queue<string>();
-
+    
 
     Encoding encoding = Encoding.UTF8;
 

@@ -102,26 +102,23 @@ public class ReplicationInfoContainer
         {
             case NetworkEventType.ServerRPC:
                 vs = NetworkManagerForTool_Base.encoding.GetBytes((byte)eventType + ",").Concat(data).ToArray();
-                RPCRequestHandler?.Invoke(vs);
                 break;
             case NetworkEventType.MultiCastRPC:
                 vs = NetworkManagerForTool_Base.encoding.GetBytes((byte)eventType + ",").Concat(data).ToArray();
-                RPCRequestHandler?.Invoke(vs);
                 break;
             case NetworkEventType.MultiCastRPCWithoutLocal:
                 vs = NetworkManagerForTool_Base.encoding.GetBytes((byte)eventType + ",").Concat(data).ToArray();
-                RPCRequestHandler?.Invoke(vs);
                 break;
             case NetworkEventType.OtherClientRPC:
                 vs = NetworkManagerForTool_Base.encoding.GetBytes((byte)eventType + ",").Concat(data).ToArray();
-                RPCRequestHandler?.Invoke(vs);
                 break;
             case NetworkEventType.ReassignResource:
                 ReAssignResourcesRequestHandler?.Invoke(data);
-                break;
+                return;
             default:
                 break;
         }
+        NetworkManagerForTool_Base.LocalInst.SendPacket(vs);
     }
 }
 
